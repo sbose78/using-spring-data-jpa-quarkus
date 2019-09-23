@@ -10,13 +10,16 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
-import org.jboss.resteasy.annotations.Body;
+import org.jboss.logmanager.Level;
+import org.jboss.logmanager.Logger;
 
 import java.util.List;
 import java.util.Optional;
 
 @Path("/api/fruits")
 public class FruitResource {
+
+    private final static Logger log = Logger.getLogger(FruitResource.class.getCanonicalName());
 
     private final FruitRepository fruitRepository;
 
@@ -49,6 +52,7 @@ public class FruitResource {
     @Produces("application/json")
     @Consumes("application/json")
     public Fruit create(JsonObject fruit) {
+        System.out.println(fruit.toString());
         return fruitRepository.save(new Fruit(fruit.getString("name"), fruit.getString("color")));
     }
 
@@ -67,11 +71,35 @@ public class FruitResource {
     }
 
     @PUT
-    @Path("/{id}}")
+    @Path("/id/{id}/name/{name}")
+    @Produces("application/json")
+    public Fruit u(@PathParam("id") Long id, @PathParam("name") String newName) {
+        Optional<Fruit> optional = fruitRepository.findById(id);
+        if (optional.isPresent()) {
+            Fruit fruit = optional.get();
+            fruit.setName(newName);
+            return fruitRepository.save(fruit);
+        }
+
+        throw new IllegalArgumentException("No Fruit with id " + id + " exists");
+    }
+
+    @PUT
+    @Path("/{id}")
     @Produces("application/json")
     @Consumes("application/json")
-    public Fruit changeColor(@PathParam("id") Long id, JsonObject fruit) {
-        return changeColor(id, fruit.getString("color"));
+    public Fruit update(@PathParam("id") Long id, JsonObject fruit) {
+        Optional<Fruit> optional = fruitRepository.findById(id);
+        if (optional.isPresent()) {
+            Fruit currentFruit = optional.get();
+            log.log(Level.DEBUG, String.format("Current Fruit: %s\n", currentFruit.toString()));
+            currentFruit.setName(fruit.getString("name"));
+            currentFruit.setColor(fruit.getString("color"));
+            log.log(Level.DEBUG, String.format("Updated Fruit: %s\n", currentFruit.toString()));
+            return fruitRepository.save(currentFruit);
+        }
+
+        throw new IllegalArgumentException("No Fruit with id " + id + " exists");
     }
 
     @GET
